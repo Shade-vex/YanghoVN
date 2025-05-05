@@ -1,0 +1,49 @@
+if game.PlaceId == 70876832253163 then
+    local Mstatus = true
+    local originalHoldDurations1 = {}
+    local runService = game:GetService("RunService")
+    local moneyBagConnections = {}
+
+    local function skipHoldPrompt1(prompt)
+        if prompt and prompt:IsA("ProximityPrompt") and prompt.Parent and prompt.Parent.Name == "MoneyBag" then
+            if not originalHoldDurations1[prompt] then
+                originalHoldDurations1[prompt] = prompt.HoldDuration
+            end
+            prompt.HoldDuration = 0
+        end
+    end
+
+    local function handleMoneyBag(v)
+        if not Mstatus then return end
+        if v:IsA("Model") and v.Name == "Moneybag" and v:FindFirstChild("MoneyBag") then
+            local prompt = v.MoneyBag:FindFirstChildOfClass("ProximityPrompt")
+            if prompt then
+                skipHoldPrompt1(prompt)
+            end
+        end
+    end
+
+    local function collectMoneyBags()
+        if not Mstatus then return end
+
+        for _, v in ipairs(workspace.RuntimeItems:GetChildren()) do
+            handleMoneyBag(v)
+        end
+
+        local connection = runService.Heartbeat:Connect(function()
+            if not Mstatus then return end
+            for _, v in ipairs(workspace.RuntimeItems:GetChildren()) do
+                if v:IsA("Model") and v.Name == "Moneybag" and v:FindFirstChild("MoneyBag") then
+                    local prompt = v.MoneyBag:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt and (v.MoneyBag.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= prompt.MaxActivationDistance then
+                        fireproximityprompt(prompt)
+                    end
+                end
+            end
+        end)
+
+        table.insert(moneyBagConnections, connection)
+    end
+
+    collectMoneyBags()
+end
